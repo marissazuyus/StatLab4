@@ -1,0 +1,391 @@
+---
+title: "Lab 4"
+author: "Marissa Zuyus"
+date: "9/18/2020"
+output: 
+  html_document:
+    toc: yes
+    toc_float: yes
+    theme: spacelab
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Task 1
+
+Get wd
+```{r}
+getwd()
+```
+
+# Task 2
+
+```{r}
+spruce.df = read.csv("SPRUCE.csv")
+tail(spruce.df)
+``` 
+
+# Task 3
+
+## Lowess smoother scatter slot
+
+```{r}
+library(s20x)
+trendscatter(Height~BHDiameter, data=spruce.df, f = 0.5)
+```
+
+## Make a linear model object 
+
+```{r}
+spruce.lm = with(spruce.df, lm(Height~BHDiameter))
+```
+
+## Find residuals 
+
+```{r}
+height.res = residuals(spruce.lm)
+```
+
+## Find fitted values
+
+```{r}
+height.fit = fitted(spruce.lm)
+```
+
+## Residuals vs fitted
+
+```{r}
+plot(y=height.res, x=height.fit)
+```
+
+## Residuals vs fitted used trendscatter
+
+```{r}
+trendscatter(y=height.res, x = height.fit)
+```
+
+## Shape of the plot
+
+The plot is symmetrical and is a parabolic shape. In this plot, instead of going flat after the peak, the slope of the blue line starts to drop. The difference is because of the x and y data, suggesting that a linear model is not appropriate for this data and something like a quadratic would fit better.
+
+## Residual plot
+
+```{r}
+plot(spruce.lm, which=1)
+```
+
+## Check normality 
+
+```{r}
+normcheck(spruce.lm, shapiro.wilk=TRUE)
+```
+
+## P-value and null-hypothesis
+
+The p-value is .29, and because this is greater than .05 we accept the null hypothesis which says our error is distributed normally. According to the Lab 4 write up, if the model works well with the data we should expect that the residuals are approximately normal in distribution with mean 0 and constant variance.
+
+## Evaluating the model
+
+```{r}
+round(mean(height.res), 4)
+```
+The mean is 0 for the residuals.
+
+## Conclusion
+
+We should not use a straight line model, as shown by the shape of the plot of residuals vs fitted height values. Because this model does not fit the data, we must adjust to a model better suited to fit a quadratic shape.
+
+# Task 4
+
+## Fit a quadratic
+
+```{r}
+quad.lm = lm(Height~BHDiameter + I(BHDiameter^2),data=spruce.df)
+summary(quad.lm)
+```
+
+## Make fresh plot and add quadratic curve
+
+```{r}
+coef(quad.lm)
+plot(spruce.df)
+
+myplot=function(x){
+ 0.86089580 +1.46959217*x  -0.02745726*x^2
+}
+
+curve(myplot, lwd=2, col="steelblue",add=TRUE)
+```
+
+## Make quad.fit
+
+```{r}
+quad.fit = fitted(quad.lm)
+```
+
+## Residuals vs fitted
+
+```{r}
+plot(quad.lm,which=1)
+```
+
+## Check normality
+
+```{r}
+normcheck(quad.lm, shapiro.wilk=TRUE)
+```
+
+## Conclusion
+
+The p-value is .684 which is even better than before, so we accept the null hypothesis. This quadratic model fits the plot of the data better than the linear model.
+
+# Task 5
+
+## Summarize quad.lm
+
+```{r}
+summary(quad.lm)
+```
+
+## Beta hat values
+
+$\hat{\beta_{0}}$ = 0.860896
+
+$\hat{\beta_{1}}$ = 1.469592
+
+$\hat{\beta_{2}}$ = -0.027457
+
+## Interval estimates
+
+```{r}
+ciReg(quad.lm)
+```
+
+## Equation of fitted line
+
+$\hat{Height} = 0.860896 + 1.469592x - 0.027457x^2$
+
+## Height predictions
+
+```{r}
+predict(quad.lm, data.frame(BHDiameter = c(15,18,20)))
+```
+
+## Comparison
+```{r}
+predict(spruce.lm, data.frame(BHDiameter = c(15,18,20)))
+```
+
+The predictions made by quad.lm follow quadratic growth and are larger than the spruce.lm predictions.
+
+## Multiple  r-squared
+
+### quad.lm
+
+```{r}
+summary(quad.lm)$r.squared
+```
+
+$R^2 = 0.7741266$
+
+### spruce.lm
+
+```{r}
+summary(spruce.lm)$r.squared
+```
+
+$R^2 = 0.6569146$
+
+## Adjusted r-squared
+
+```{r}
+summary(quad.lm)$adj.r.squared
+summary(spruce.lm)$adj.r.squared
+```
+
+The adjusted r-squared shows how well data fits a model. If more variables are added and the data improves, r-squared goes up, whereas if the addition of the added variables makes the model weaker, the r-squared decreases.Based on the adjusted r-squared values of quad.lm and spruce.lm, quad.lm is a better fit (higher r-squared value).
+
+## Meaning of multiple r-squared
+
+It means how well the model itself describes the data and is not dependent on the number nor the effectiveness of included variables. The multiple r-squared value basically describes how quad.lm and spruce.lm are as models.
+
+## Model with most variability
+
+```{r}
+summary(quad.lm)$r.squared
+summary(quad.lm)$adj.r.squared
+summary(spruce.lm)$r.squared
+summary(spruce.lm)$adj.r.squared
+```
+
+Both the r-squared and adjusted r-squared values of quad.lm are greater than those of spruce.lm, so quad.lm explains the most variability in height.
+
+## anova
+
+```{r}
+anova(spruce.lm)
+anova(quad.lm)
+anova(spruce.lm, quad.lm)
+```
+
+Because of its smaller RSS value, quad.lm fits the data closer than spruce.lm.
+
+## TSS, MSS, RSS
+
+```{r}
+height.qfit=fitted(quad.lm)
+```
+
+
+### TSS
+
+```{r}
+TSS = with(spruce.df, sum((Height - mean(Height))^2))
+TSS
+```
+
+### MSS
+
+```{r}
+MSS = with(spruce.df, sum((height.qfit-mean(Height))^2))
+MSS
+```
+
+### RSS
+
+```{r}
+RSS=with(spruce.df, sum((Height-height.qfit)^2))
+RSS
+```
+
+## MSS / TSS
+
+```{r}
+MSS / TSS
+```
+
+
+# Task 6
+
+## Cook's Plot
+
+```{r}
+cooks20x(quad.lm, main="Cook's distance plot for quad.lm")
+```
+
+## What Cook's distance is
+
+This is the measure of how much a data point would change the regression analysis if it were deleted. The greater the distance, the greater the impact. Distance is based on the data's impact on fitted response values. This is used to find outliers and can suggest which datum to remove if a new model is wanted without a large influencer.The model can be improved by removing outlier data that may be distorting it, and this can be observed if the r-squared value increases.
+
+## Cook's distance for quad.lm
+
+Cook's distance says that the 24th datum in the data is the most influential as it has the tallest height on the plot.
+
+## quad2.lm
+```{r}
+quad2.lm = lm(Height~BHDiameter + I(BHDiameter^2), data = spruce.df[-24,])
+```
+
+## quad2.lm summary
+
+```{r}
+summary(quad2.lm)
+```
+
+## Comparison with quad.lm
+
+```{r}
+summary(quad.lm)
+```
+
+The median, min, and max residuals are smaller for quad2.lm. Both the r-squared and adjusted r-squared values for quad2.lm are larger than quad.lm's.
+
+## Conclusion
+
+The Cook's distance plot was correct in indicating the 24th datum was impacting the model because after we removed it, the r-squared values of the data increased.
+
+# Task 7
+
+## Proof
+
+There are two lines with the point $x_{k}$ in common
+
+$l_{1} : y - {\beta_0} + {\beta_1}x$
+
+$l_{2} : y - {\beta_0} + {\delta} + ({\beta_1} + {\beta_2})x$
+
+Next plug in the point $x_{k}$ and set the equations equal to eachother
+
+$y_{k} = {\beta_0} + {\beta_1}x_{k} = {\beta_0} + {\delta} + ({\beta_1} + {\beta_2})x_{k}$
+
+Distribute $x_{k}$ on the right hand side
+
+${\beta_0} + {\beta_1}x_{k} - {\beta_0} + {\delta} + {\beta_1}x_{k} + {\beta_2}x_{k}$
+
+Cancel out ${\beta_0}$ and ${\beta_1}x$
+
+$0={\delta}+{\beta_2}x_{k}$
+
+Substitute ${\delta} = -{\beta_2}x_{k}$ and distribute x
+
+$l_{2}: y={\beta_0} - {\beta_2}x_{k} + {\beta_1}x + {\beta_2}x$
+
+Rearrange and factor out ${\beta_2}$
+
+$l_2: y= {\beta_0} + {\beta_1}x + {\beta_2}(x-x_{k})$
+
+Now that there is a formula that describes $l_{2}$ as an adjustment of $l_{1}$, we can use an indicator function to allow our function to know where it should and should not include the adjustment.
+
+$y={\beta_0} + {\beta_1}x + {\beta_2}(x-x_{k})I(x>x_{k})$
+
+Where I() is 1 if x > $x_{k}$ and 0 else.
+
+## Reproducing the plot
+
+```{r}
+sp2.df = within(spruce.df, X<- (BHDiameter-18) *( BHDiameter> 18))
+sp2.df
+
+lmp = lm(Height~BHDiameter + X, data = sp2.df)
+tmp = summary(lmp)
+names(tmp)
+
+myf = function(x,coef){
+  coef[1]+coef[2]*(x) + coef[3]*(x-18)*(x-18>0)
+}
+plot(spruce.df, main="Piecewise regression")
+myf(0, coef=tmp$coefficients[,"Estimate"])
+
+curve(myf(x,coef=tmp$coefficients[,"Estimate"] ),add=TRUE, lwd=2,col="Blue")
+abline(v=18)
+text(18,16,paste("R sq.=",round(tmp$r.squared,4) ))
+```
+
+# Task 8
+
+The function pareto() will take a vector of numbers (and also titles) and will display a pareto chart of the data. This chart includes a barplot of individual values represented in descending order, as well as the cumulative total represented by the line. The data used to represent this function is from Assignment 1.
+
+```{r}
+library(PackageZuyus)
+
+limb.counts = c(15, 8, 63, 20);
+limb.labels = c("None", "Both", "Legs ONLY", "Wheels ONLY");
+limb.freq.df = as.data.frame(matrix(data= limb.counts/sum(limb.counts), nrow=4, ncol=1), row.names = limb.labels);
+limb.freq.df
+
+limb.raw = rep(limb.labels, limb.counts);
+pareto(limb.raw)
+```
+
+
+
+
+
+
+
+
+
+
+
